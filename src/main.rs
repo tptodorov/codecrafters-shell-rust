@@ -16,11 +16,14 @@ fn main() -> ExitCode {
     builtins.insert("exit", RefCell::new(Box::new(builtins::exit)));
     builtins.insert("echo", RefCell::new(Box::new(builtins::echo)));
     builtins.insert("type", RefCell::new(Box::new(builtins::type_cmd)));
+    builtins.insert("pwd", RefCell::new(Box::new(builtins::pwd)));
+    builtins.insert("cd", RefCell::new(Box::new(builtins::cd)));
 
-    let mut last_code = 0;
     let mut input = String::new();
     let stdin = io::stdin();
     let path = &path();
+    let current = env::current_dir().unwrap();
+    let mut context = Context { last_code: 0, builtins: &builtins, path, current };
 
     loop {
         input.clear();
@@ -37,27 +40,25 @@ fn main() -> ExitCode {
 
         let cmd = input.split_ascii_whitespace().collect::<Vec<&str>>();
 
-        let context = Context { last_code, builtins: &builtins, path };
         match &cmd[..] {
             [cmd, args @ .. ] => {
                 if let Some(func) = builtins.get(cmd.trim()) {
                     let func = func.borrow();
-                    match func(context, args) {
+                    match func(&mut context, args) {
                         Ok(code) => {
-                            last_code = code;
+                            context.last_code = code;
                         }
                         Err(code) => return ExitCode::from(code as u8)
                     }
-                } else if let Some(exec) = context.path(cmd) {
+                } else if let Some(exec) = context.find_file(cmd) {
                     match std::process::Command::new(exec).args(args).status() {
                         Ok(status) => {
-                            last_code = status.code().unwrap_or_default();
-
+                            context.last_code = status.code().unwrap_or_default();
                         }
                         Err(_) => {}
                     }
                 } else {
-                    last_code = 1;
+                    context.last_code = 1;
                     println!("{}: command not found", input);
                 }
             }
