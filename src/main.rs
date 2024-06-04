@@ -1,10 +1,13 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::env;
 use std::io::{self, Write};
+use std::path::PathBuf;
 use std::process::ExitCode;
 use crate::builtins::{Builtins, Context};
 
 mod builtins;
+
 
 fn main() -> ExitCode {
     let mut builtins: Builtins = HashMap::new();
@@ -17,6 +20,7 @@ fn main() -> ExitCode {
     let mut last_code = 0;
     let mut input = String::new();
     let stdin = io::stdin();
+    let path = &path();
 
     loop {
         input.clear();
@@ -37,7 +41,7 @@ fn main() -> ExitCode {
             [cmd, args @ .. ] => {
                 if let Some(func) = builtins.get(cmd.trim()) {
                     let func = func.borrow();
-                    match func(Context{ last_code, builtins: &builtins },args) {
+                    match func(Context{ last_code, builtins: &builtins, path }, args) {
                         Ok(code) => {
                             last_code = code;
                         }
@@ -53,4 +57,8 @@ fn main() -> ExitCode {
             }
         }
     }
+}
+
+fn path() -> Vec<PathBuf> {
+    env::var("PATH").unwrap_or_default().split(":").map(|s| PathBuf::from(s)).collect()
 }

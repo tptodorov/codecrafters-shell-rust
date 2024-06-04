@@ -1,11 +1,13 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 type ReturnCode = u8;
 
 pub struct Context<'a> {
     pub last_code: ReturnCode,
     pub builtins: &'a Builtins,
+    pub path: &'a [PathBuf]
 }
 
 // This is a function pointer to a function executed by the shell.
@@ -14,6 +16,8 @@ pub struct Context<'a> {
 pub type BuiltInFn = Box<(dyn Fn(Context, &[&str]) -> Result<ReturnCode, ReturnCode>)>;
 
 pub type Builtins = HashMap<&'static str, RefCell<BuiltInFn>>;
+
+const SUCCESS: Result<ReturnCode, ReturnCode> = Ok(0);
 
 pub fn exit(c: Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
     match args {
@@ -37,7 +41,11 @@ pub fn type_cmd(c: Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
             if c.builtins.contains_key(name) {
                 println!("{} is a shell builtin", name);
             } else {
-                println!("{} not found", name);
+                if let Some(found) = c.path.iter().find(|p| p.join(name).is_file()) {
+                    println!("{} is {}", name, found.join(name).to_string_lossy());
+                } else {
+                    println!("{} not found", name);
+                }
             }
             SUCCESS
         }
@@ -48,4 +56,3 @@ pub fn type_cmd(c: Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
     }
 }
 
-const SUCCESS: Result<ReturnCode, ReturnCode> = Ok(0);
