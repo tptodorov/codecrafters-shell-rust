@@ -1,8 +1,7 @@
-use anyhow::Result;
-#[allow(unused_imports)]
 use std::io::{self, Write};
+use std::process::ExitCode;
 
-fn main() -> Result<u8> {
+fn main() -> ExitCode {
     let mut last_status = 0;
     loop {
         print!("$ ");
@@ -13,13 +12,23 @@ fn main() -> Result<u8> {
         let mut input = String::new();
         stdin.read_line(&mut input).unwrap();
         let input = input.trim();
-        match input {
-            "exit" => break,
+        if input.is_empty() {
+            continue;
+        }
+
+        let cmd = input.split_whitespace().collect::<Vec<&str>>();
+        match &cmd[..] {
+            ["exit"] => break,
+            ["exit", code] => {
+                let code = code.parse::<u8>();
+                last_status = code.unwrap_or_default();
+                break;
+            }
             _ => {
                 last_status = 1;
                 println!("{}: command not found", input);
             }
         }
     }
-    return Ok(last_status);
+    return ExitCode::from(last_status);
 }
