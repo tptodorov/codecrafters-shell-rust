@@ -37,15 +37,24 @@ fn main() -> ExitCode {
 
         let cmd = input.split_ascii_whitespace().collect::<Vec<&str>>();
 
+        let context = Context { last_code, builtins: &builtins, path };
         match &cmd[..] {
             [cmd, args @ .. ] => {
                 if let Some(func) = builtins.get(cmd.trim()) {
                     let func = func.borrow();
-                    match func(Context{ last_code, builtins: &builtins, path }, args) {
+                    match func(context, args) {
                         Ok(code) => {
                             last_code = code;
                         }
-                        Err(code) => return ExitCode::from(code)
+                        Err(code) => return ExitCode::from(code as u8)
+                    }
+                } else if let Some(exec) = context.path(cmd) {
+                    match std::process::Command::new(exec).args(args).status() {
+                        Ok(status) => {
+                            last_code = status.code().unwrap_or_default();
+
+                        }
+                        Err(_) => {}
                     }
                 } else {
                     last_code = 1;
