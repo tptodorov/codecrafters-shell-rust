@@ -24,6 +24,9 @@ fn main() -> ExitCode {
                 last_status = code.unwrap_or_default();
                 break;
             }
+            ["echo", args @ ..] => {
+                println!("{}", args.join(" ").as_str());
+            }
             _ => {
                 last_status = 1;
                 println!("{}: command not found", input);
