@@ -51,7 +51,7 @@ pub fn type_cmd(c: Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
                 println!("{} is a shell builtin", name);
             } else {
                 if let Some(found) = c.path(name) {
-                    println!("{} is {}", name, found.join(name).to_string_lossy());
+                    println!("{} is {}", name, found.to_string_lossy());
                 } else {
                     println!("{} not found", name);
                 }
