@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::env;
 use std::io::{self, Write};
-use std::path::PathBuf;
 use std::process::ExitCode;
 use crate::builtins::{Builtins, Context};
 
@@ -21,9 +20,8 @@ fn main() -> ExitCode {
 
     let mut input = String::new();
     let stdin = io::stdin();
-    let path = &path();
     let current = env::current_dir().unwrap();
-    let mut context = Context { last_code: 0, builtins: &builtins, path, current };
+    let mut context = Context::new(current, &builtins);
 
     loop {
         input.clear();
@@ -69,6 +67,3 @@ fn main() -> ExitCode {
     }
 }
 
-fn path() -> Vec<PathBuf> {
-    env::var("PATH").unwrap_or_default().split(":").map(|s| PathBuf::from(s)).collect()
-}

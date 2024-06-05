@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::env;
 use std::path::{Path, PathBuf};
 
 type ReturnCode = i32;
@@ -8,15 +9,27 @@ pub struct Context<'a> {
     pub last_code: ReturnCode,
     pub builtins: &'a Builtins,
     pub current: PathBuf,
-    pub path: &'a [PathBuf]
 }
 
-impl Context<'_> {
+impl<'a> Context<'a> {
+    pub fn new(current: PathBuf, builtins: &'a Builtins) -> Self {
+        Self {
+            last_code: 0,
+            current,
+            builtins,
+        }
+    }
+
+    pub fn home(&self) -> PathBuf {
+        PathBuf::from(env::var("HOME").unwrap_or_default())
+    }
 
     /// find a file in current path
     pub fn find_file(&self, name: &str) -> Option<PathBuf> {
-        self.path
-            .iter()
+        env::var("PATH")
+            .unwrap_or_default()
+            .split(":")
+            .map(|s| PathBuf::from(s))
             .find(|p| p.join(name).is_file())
             .map(|p| p.join(name))
     }
@@ -54,6 +67,10 @@ pub fn pwd(c: &mut Context, _: &[&str]) -> Result<ReturnCode, ReturnCode> {
 
 pub fn cd(c: &mut Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
     match args {
+        [] | ["~"] => {
+            c.current = c.home();
+            SUCCESS
+        }
         [destination] => {
             match c.current.join(Path::new(destination)).canonicalize() {
                 Ok(target) => {
