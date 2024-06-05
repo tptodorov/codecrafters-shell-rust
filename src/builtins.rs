@@ -5,10 +5,11 @@ use std::path::{Path, PathBuf};
 
 type ReturnCode = i32;
 
+/// Shell Execution context
 pub struct Context<'a> {
-    pub last_code: ReturnCode,
-    pub builtins: &'a Builtins,
-    pub current: PathBuf,
+    pub(crate) last_code: ReturnCode,
+    builtins: &'a Builtins,
+    current: PathBuf,
 }
 
 impl<'a> Context<'a> {
@@ -38,9 +39,9 @@ impl<'a> Context<'a> {
 // This is a function pointer to a function executed by the shell.
 // Ok(code) result means the function was executed and returned code.
 // Err(code) means the function terminates the shell with code.
-pub type BuiltInFn = Box<(dyn Fn(&mut Context, &[&str]) -> Result<ReturnCode, ReturnCode>)>;
+pub type BuiltinFn = Box<(dyn Fn(&mut Context, &[&str]) -> Result<ReturnCode, ReturnCode>)>;
 
-pub type Builtins = HashMap<&'static str, RefCell<BuiltInFn>>;
+pub type Builtins = HashMap<&'static str, RefCell<BuiltinFn>>;
 
 const SUCCESS: Result<ReturnCode, ReturnCode> = Ok(0);
 
