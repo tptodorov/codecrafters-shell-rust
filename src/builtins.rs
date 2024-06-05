@@ -55,13 +55,20 @@ pub fn pwd(c: &mut Context, _: &[&str]) -> Result<ReturnCode, ReturnCode> {
 pub fn cd(c: &mut Context, args: &[&str]) -> Result<ReturnCode, ReturnCode> {
     match args {
         [destination] => {
-            let target =c.current.join(Path::new(destination));
-            if target.is_dir() {
-                c.current = target;
-                SUCCESS
-            } else {
-                println!("{}: No such file or directory", target.to_string_lossy());
-                Ok(1)
+            match c.current.join(Path::new(destination)).canonicalize() {
+                Ok(target) => {
+                    if target.is_dir() {
+                        c.current = target;
+                        SUCCESS
+                    } else {
+                        println!("{}: No such file or directory", target.to_string_lossy());
+                        Ok(1)
+                    }
+                }
+                Err(_) => {
+                    println!("{}: No such file or directory", destination);
+                    Ok(1)
+                }
             }
         }
         _ => Ok(1),
